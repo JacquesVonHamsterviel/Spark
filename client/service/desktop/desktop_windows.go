@@ -23,17 +23,20 @@ var (
 type Screen struct {
 	screen ScreenCapture
 }
+
 type ScreenCapture interface {
 	Init(uint, image.Rectangle) error
 	Capture() (*image.RGBA, error)
 	Release()
 }
+
 type ScreenDXGI struct {
 	rect      image.Rectangle
 	device    *d3d11.ID3D11Device
 	deviceCtx *d3d11.ID3D11DeviceContext
 	ddup      *outputduplication.OutputDuplicator
 }
+
 type ScreenGDI struct {
 	rect           image.Rectangle
 	width          int
@@ -48,19 +51,26 @@ type ScreenGDI struct {
 	memptr         unsafe.Pointer
 }
 
-func (s *Screen) Init(displayIndex uint, rect image.Rectangle) {
+func (s *Screen) Init(displayIndex uint, rect image.Rectangle) error {
 	dxgi := ScreenDXGI{}
-	if dxgi.Init(displayIndex, rect) == nil {
+	if err := dxgi.Init(displayIndex, rect); err == nil {
 		s.screen = &dxgi
+		return nil
 	} else {
 		gdi := ScreenGDI{}
-		gdi.Init(displayIndex, rect)
-		s.screen = &gdi
+		if err := gdi.Init(displayIndex, rect); err == nil {
+			s.screen = &gdi
+			return nil
+		} else {
+			return err
+		}
 	}
 }
+
 func (s *Screen) Capture() (*image.RGBA, error) {
 	return s.screen.Capture()
 }
+
 func (s *Screen) Release() {
 	s.screen.Release()
 }
@@ -77,6 +87,9 @@ func (s *ScreenDXGI) Init(displayIndex uint, rect image.Rectangle) error {
 	}
 
 	s.device, s.deviceCtx, err = d3d11.NewD3D11Device()
+	if err != nil {
+		return err
+	}
 	s.ddup, err = outputduplication.NewIDXGIOutputDuplication(s.device, s.deviceCtx, displayIndex)
 	if err != nil {
 		s.device.Release()
@@ -85,14 +98,16 @@ func (s *ScreenDXGI) Init(displayIndex uint, rect image.Rectangle) error {
 	}
 	return nil
 }
+
 func (s *ScreenDXGI) Capture() (*image.RGBA, error) {
 	img := image.NewRGBA(image.Rect(0, 0, s.rect.Dx(), s.rect.Dy()))
 	err := s.ddup.GetImage(img, 100)
 	if err == outputduplication.ErrNoImageYet {
-		return nil, errNoImage
+		return nil, errors.New("no image yet")
 	}
 	return img, err
 }
+
 func (s *ScreenDXGI) Release() {
 	if s.ddup != nil {
 		s.ddup.Release()
@@ -152,6 +167,7 @@ func (s *ScreenGDI) Init(_ uint, rect image.Rectangle) error {
 	}
 	return nil
 }
+
 func (s *ScreenGDI) Capture() (*image.RGBA, error) {
 	old := winGDI.SelectObject(s.memoryDevice, winGDI.HGDIOBJ(s.bitmap))
 	if old == 0 {
@@ -173,6 +189,7 @@ func (s *ScreenGDI) Capture() (*image.RGBA, error) {
 
 	return img, nil
 }
+
 func (s *ScreenGDI) Release() {
 	if s.hdc != 0 {
 		winGDI.ReleaseDC(s.hwnd, s.hdc)
@@ -192,6 +209,7 @@ func (s *ScreenGDI) Release() {
 		s.hmem = 0
 	}
 }
+
 func getDesktopWindow() winGDI.HWND {
 	ret, _, _ := syscall.SyscallN(funcGetDesktopWindow)
 	return winGDI.HWND(ret)

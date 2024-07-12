@@ -1,30 +1,27 @@
 export GO111MODULE=auto
-export COMMIT=`git rev-parse HEAD`
+export COMMIT=$(git rev-parse HEAD)
+export CLIENT_PATH=Spark/client
+export OUTPUT_DIR=./built
 
+# 定义目标平台和架构
+targets=(
+    "linux arm"
+    "linux 386"
+    "linux arm64"
+    "linux amd64"
+    "windows 386"
+    "windows arm64"
+    "windows amd64"
+)
 
+# 循环构建
+for target in "${targets[@]}"; do
+    export CGO_ENABLED=0
 
-export GOOS=linux
-
-export GOARCH=arm
-go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=$COMMIT'" -o ./built/linux_arm Spark/client
-export GOARCH=386
-go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=$COMMIT'" -o ./built/linux_i386 Spark/client
-export GOARCH=arm64
-go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=$COMMIT'" -o ./built/linux_arm64 Spark/client
-export GOARCH=amd64
-go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=$COMMIT'" -o ./built/linux_amd64 Spark/client
-
-
-
-export GOOS=windows
-
-export GOARCH=386
-go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=$COMMIT'" -o ./built/windows_i386 Spark/client
-export GOARCH=arm64
-go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=$COMMIT'" -o ./built/windows_arm64 Spark/client
-export GOARCH=amd64
-go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=$COMMIT'" -o ./built/windows_amd64 Spark/client
-
+    export GOOS=${target%% *}
+    export GOARCH=${target##* }
+    go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=$COMMIT'" -o "$OUTPUT_DIR/${GOOS}_${GOARCH}" $CLIENT_PATH
+done
 
 
 # export GOOS=android

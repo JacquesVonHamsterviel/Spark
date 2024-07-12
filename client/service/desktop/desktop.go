@@ -70,7 +70,6 @@ var errNoImage = errors.New(`DESKTOP.NO_IMAGE_YET`)
 func init() {
 	go healthCheck()
 }
-
 func worker() {
 	runtime.LockOSThread()
 	lock.Lock()
@@ -88,6 +87,18 @@ func worker() {
 		img       *image.RGBA
 		err       error
 	)
+	defer func() {
+		if r := recover(); r != nil {
+			quitAllDesktop("panic occurred")
+		}
+		screen.Release()
+		lock.Lock()
+		working = false
+		lock.Unlock()
+		runtime.UnlockOSThread()
+		go runtime.GC()
+	}()
+
 	screen.Init(displayIndex, displayBounds)
 	for working {
 		if sessions.Count() == 0 {
@@ -103,6 +114,13 @@ func worker() {
 			if numErrors > 10 {
 				break
 			}
+			continue // Add continue to skip processing img if there's an error
+		} else if img == nil {
+			numErrors++
+			if numErrors > 10 {
+				break
+			}
+			continue // Add continue to skip processing img if it's nil
 		} else {
 			numErrors = 0
 			diff := imageCompare(img, prevDesktop, compress)
@@ -113,18 +131,11 @@ func worker() {
 			<-time.After(time.Second / fpsLimit)
 		}
 	}
-	img = nil
-	prevDesktop = nil
 	if numErrors > 10 {
 		quitAllDesktop(err.Error())
 	}
-	lock.Lock()
-	working = false
-	lock.Unlock()
-	screen.Release()
-	runtime.UnlockOSThread()
-	go runtime.GC()
 }
+
 
 func sendImageDiff(diff []*[]byte) {
 	sessions.IterCb(func(uuid string, desktop *session) bool {
