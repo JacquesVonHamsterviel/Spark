@@ -30,11 +30,11 @@ for target in "${targets[@]}"; do
 done
 
 mv ../Releases/built/linux_386 ../Releases/built/linux_i386
-mv ../Releases/built/windows_amd64 ../Releases/built/windows_amd64.exe
-mv ../Releases/built/windows_arm ../Releases/built/windows_arm.exe
-mv ../Releases/built/windows_arm64 ../Releases/built/windows_arm64.exe
-mv ../Releases/built/windows_386 ../Releases/built/windows_i386.exe
-
+#mv ../Releases/built/windows_amd64 ../Releases/built/windows_amd64.exe
+#mv ../Releases/built/windows_arm ../Releases/built/windows_arm.exe
+#mv ../Releases/built/windows_arm64 ../Releases/built/windows_arm64.exe
+#mv ../Releases/built/windows_386 ../Releases/built/windows_i386.exe
+mv ../Releases/built/windows_386 ../Releases/built/windows_i386
 
 # export GOOS=android
 # export CGO_ENABLED=1

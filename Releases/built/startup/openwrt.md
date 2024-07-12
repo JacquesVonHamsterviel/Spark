@@ -33,6 +33,24 @@ stop() {
 
 ```
 
+避免写入日志
+
+```
+#!/bin/sh /etc/rc.common
+
+#service startup sequence
+START=99
+
+start() {
+        #start your process with parameters in background
+        /usr/bin/yourser >/dev/null 2>&1 &
+}
+
+stop() {
+           killall yourser
+}
+
+
 获取权限并且启动服务：
 
 ```
