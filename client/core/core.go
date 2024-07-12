@@ -8,10 +8,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"net/http"
-	"os"
-	"os/exec"
-	"runtime"
-	"strings"
+	//"os"
+	//"runtime"
+	//"strings"
 	"time"
 
 	ws "github.com/gorilla/websocket"
@@ -49,8 +48,6 @@ func Start() {
 			<-time.After(3 * time.Second)
 			continue
 		}
-
-		checkUpdate(common.WSConn)
 
 		err = handleWS(common.WSConn)
 		if err != nil && !stop {
@@ -107,48 +104,6 @@ func reportWS(wsConn *common.Conn) error {
 	}
 	if pack.Code != 0 {
 		return errors.New(`${i18n|COMMON.UNKNOWN_ERROR}`)
-	}
-	return nil
-}
-
-func checkUpdate(wsConn *common.Conn) error {
-	if len(config.COMMIT) == 0 {
-		return nil
-	}
-	resp, err := common.HTTP.R().
-		SetBody(config.ConfigBuffer).
-		SetQueryParam(`os`, runtime.GOOS).
-		SetQueryParam(`arch`, runtime.GOARCH).
-		SetQueryParam(`commit`, config.COMMIT).
-		SetHeader(`Secret`, wsConn.GetSecretHex()).
-		Send(`POST`, config.GetBaseURL(false)+`/api/client/update`)
-	if err != nil {
-		return err
-	}
-	if resp == nil {
-		return errors.New(`${i18n|COMMON.UNKNOWN_ERROR}`)
-	}
-	if strings.HasPrefix(resp.GetContentType(), `application/octet-stream`) {
-		body := resp.Bytes()
-		if len(body) > 0 {
-			selfPath, err := os.Executable()
-			if err != nil {
-				selfPath = os.Args[0]
-			}
-			err = os.WriteFile(selfPath+`.tmp`, body, 0755)
-			if err != nil {
-				return err
-			}
-			cmd := exec.Command(selfPath+`.tmp`, `--update`)
-			err = cmd.Start()
-			if err != nil {
-				return err
-			}
-			stop = true
-			wsConn.Close()
-			os.Exit(0)
-		}
-		return nil
 	}
 	return nil
 }

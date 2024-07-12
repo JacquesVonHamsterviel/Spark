@@ -17,14 +17,14 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/kataras/golog"
 )
 
+// isPrivateIP checks if an IP address is private
 func isPrivateIP(ip _net.IP) bool {
 	var privateIPBlocks []*_net.IPNet
 	for _, cidr := range []string{
-		//"127.0.0.0/8",    // IPv4 loopback
-		//"::1/128",        // IPv6 loopback
-		//"fe80::/10",      // IPv6 link-local
 		"10.0.0.0/8",     // RFC1918
 		"172.16.0.0/12",  // RFC1918
 		"192.168.0.0/16", // RFC1918
@@ -40,6 +40,7 @@ func isPrivateIP(ip _net.IP) bool {
 	return false
 }
 
+// GetLocalIP retrieves the local IP address
 func GetLocalIP() (string, error) {
 	ifaces, err := _net.Interfaces()
 	if err != nil {
@@ -71,6 +72,7 @@ func GetLocalIP() (string, error) {
 	return `<UNKNOWN>`, errors.New(`no IP address found`)
 }
 
+// GetMacAddress retrieves the MAC address
 func GetMacAddress() (string, error) {
 	interfaces, err := _net.Interfaces()
 	if err != nil {
@@ -89,11 +91,12 @@ func GetMacAddress() (string, error) {
 	return strings.ToUpper(address[0]), nil
 }
 
+// GetNetIOInfo retrieves network IO information
 func GetNetIOInfo() (modules.Net, error) {
 	result := modules.Net{}
 	first, err := net.IOCounters(false)
 	if err != nil {
-		return result, nil
+		return result, err
 	}
 	if len(first) == 0 {
 		return result, errors.New(`failed to read network io counters`)
@@ -101,21 +104,24 @@ func GetNetIOInfo() (modules.Net, error) {
 	<-time.After(time.Second)
 	second, err := net.IOCounters(false)
 	if err != nil {
-		return result, nil
+		return result, err
 	}
 	if len(second) == 0 {
 		return result, errors.New(`failed to read network io counters`)
 	}
 	result.Recv = second[0].BytesRecv - first[0].BytesRecv
 	result.Sent = second[0].BytesSent - first[0].BytesSent
+
+	golog.Debugf("NetIOInfo: %+v", result)
 	return result, nil
 }
 
+// GetCPUInfo retrieves CPU information
 func GetCPUInfo() (modules.CPU, error) {
 	result := modules.CPU{}
 	info, err := cpu.Info()
 	if err != nil {
-		return result, nil
+		return result, err
 	}
 	if len(info) == 0 {
 		return result, errors.New(`failed to read cpu info`)
@@ -125,33 +131,39 @@ func GetCPUInfo() (modules.CPU, error) {
 	result.Cores.Physical, _ = cpu.Counts(false)
 	stat, err := cpu.Percent(3*time.Second, false)
 	if err != nil {
-		return result, nil
+		return result, err
 	}
 	if len(stat) == 0 {
 		return result, errors.New(`failed to read cpu info`)
 	}
 	result.Usage = stat[0]
+
+	golog.Debugf("CPUInfo: %+v", result)
 	return result, nil
 }
 
+// GetRAMInfo retrieves RAM information
 func GetRAMInfo() (modules.IO, error) {
 	result := modules.IO{}
 	stat, err := mem.VirtualMemory()
 	if err != nil {
-		return result, nil
+		return result, err
 	}
 	result.Total = stat.Total
 	result.Used = stat.Used
 	result.Usage = float64(stat.Used) / float64(stat.Total) * 100
+
+	golog.Debugf("RAMInfo: %+v", result)
 	return result, nil
 }
 
+// GetDiskInfo retrieves disk information
 func GetDiskInfo() (modules.IO, error) {
-	devices := map[string]struct{}{}
 	result := modules.IO{}
+	devices := map[string]struct{}{}
 	disks, err := disk.Partitions(false)
 	if err != nil {
-		return result, nil
+		return result, err
 	}
 	for i := 0; i < len(disks); i++ {
 		if _, ok := devices[disks[i].Device]; !ok {
@@ -164,9 +176,12 @@ func GetDiskInfo() (modules.IO, error) {
 		}
 	}
 	result.Usage = float64(result.Used) / float64(result.Total) * 100
+
+	golog.Debugf("DiskInfo: %+v", result)
 	return result, nil
 }
 
+// GetDevice retrieves all device information
 func GetDevice() (*modules.Device, error) {
 	id, err := machineid.ProtectedID(`Spark`)
 	if err != nil {
@@ -232,7 +247,7 @@ func GetDevice() (*modules.Device, error) {
 			username.Username = username.Username[slashIndex+1:]
 		}
 	}
-	return &modules.Device{
+	device := &modules.Device{
 		ID:       id,
 		OS:       runtime.GOOS,
 		Arch:     runtime.GOARCH,
@@ -245,9 +260,13 @@ func GetDevice() (*modules.Device, error) {
 		Uptime:   uptime,
 		Hostname: hostname,
 		Username: username.Username,
-	}, nil
+	}
+
+	golog.Debugf("Device: %+v", device)
+	return device, nil
 }
 
+// GetPartialInfo retrieves partial device information
 func GetPartialInfo() (*modules.Device, error) {
 	cpuInfo, err := GetCPUInfo()
 	if err != nil {
@@ -283,11 +302,14 @@ func GetPartialInfo() (*modules.Device, error) {
 	if err != nil {
 		uptime = 0
 	}
-	return &modules.Device{
+	partialDevice := &modules.Device{
 		Net:    netInfo,
 		CPU:    cpuInfo,
 		RAM:    memInfo,
 		Disk:   diskInfo,
 		Uptime: uptime,
-	}, nil
+	}
+
+	golog.Debugf("PartialDevice: %+v", partialDevice)
+	return partialDevice, nil
 }

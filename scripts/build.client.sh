@@ -1,17 +1,20 @@
 export GO111MODULE=auto
 export COMMIT=$(git rev-parse HEAD)
 export CLIENT_PATH=Spark/client
-export OUTPUT_DIR=./built
+export OUTPUT_DIR=../Releases/built
 
 # 定义目标平台和架构
 targets=(
-    "linux arm"
-    "linux 386"
-    "linux arm64"
+    "darwin amd64"
+    "darwin arm64"
     "linux amd64"
-    "windows 386"
-    "windows arm64"
+    "linux arm"
+    "linux arm64"
+    "linux 386"
     "windows amd64"
+    "windows arm"
+    "windows arm64"
+    "windows 386"
 )
 
 # 循环构建
@@ -20,8 +23,17 @@ for target in "${targets[@]}"; do
 
     export GOOS=${target%% *}
     export GOARCH=${target##* }
+    if [[ "$GOOS" == *"windows"* ]]; then
+        OUTPUT_FILE="$OUTPUT_FILE.exe"
+    fi
     go build -ldflags "-s -w -X 'Spark/client/config.COMMIT=$COMMIT'" -o "$OUTPUT_DIR/${GOOS}_${GOARCH}" $CLIENT_PATH
 done
+
+mv ../Releases/built/linux_386 ../Releases/built/linux_i386
+mv ../Releases/built/windows_amd64 ../Releases/built/windows_amd64.exe
+mv ../Releases/built/windows_arm ../Releases/built/windows_arm.exe
+mv ../Releases/built/windows_arm64 ../Releases/built/windows_arm64.exe
+mv ../Releases/built/windows_386 ../Releases/built/windows_i386.exe
 
 
 # export GOOS=android

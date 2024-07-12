@@ -7,20 +7,18 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	//"flag"
 	"math/big"
 	"os"
-	"os/exec"
 	"strings"
-	"time"
+	//"time"
 
-	"github.com/kataras/golog"
+	//"github.com/kataras/golog"
 )
 
 func init() {
-	golog.SetTimeFormat(`2006/01/02 15:04:05`)
-
 	if len(strings.Trim(config.ConfigBuffer, "\x19")) == 0 {
-		os.Exit(0)
+		os.Exit(1)
 		return
 	}
 
@@ -41,41 +39,13 @@ func init() {
 		os.Exit(1)
 		return
 	}
-	if strings.HasSuffix(config.Config.Path, `/`) {
+	if strings.HasSuffix(config.Config.Path, "/") {
 		config.Config.Path = config.Config.Path[:len(config.Config.Path)-1]
 	}
 }
 
 func main() {
-	update()
 	core.Start()
-}
-
-func update() {
-	selfPath, err := os.Executable()
-	if err != nil {
-		selfPath = os.Args[0]
-	}
-	if len(os.Args) > 1 && os.Args[1] == `--update` {
-		if len(selfPath) <= 4 {
-			return
-		}
-		destPath := selfPath[:len(selfPath)-4]
-		thisFile, err := os.ReadFile(selfPath)
-		if err != nil {
-			return
-		}
-		os.WriteFile(destPath, thisFile, 0755)
-		cmd := exec.Command(destPath, `--clean`)
-		if cmd.Start() == nil {
-			os.Exit(0)
-			return
-		}
-	}
-	if len(os.Args) > 1 && os.Args[1] == `--clean` {
-		<-time.After(3 * time.Second)
-		os.Remove(selfPath + `.tmp`)
-	}
 }
 
 func decrypt(data []byte, key []byte) ([]byte, error) {
