@@ -1,0 +1,8 @@
+{
+"listen": ":8000", 
+"salt": "YourSalt", 
+"auth": { "admin@example.com": "admin@example.com"
+    },
+ "log": { "level": "info", "path": "./logs", "days": 7
+    }
+}
