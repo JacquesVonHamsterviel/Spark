@@ -1,0 +1,53 @@
+https://blog.csdn.net/tangobravo/article/details/119336590
+
+
+wget https://spark.kkk.plus/linux-x64
+
+mv linux-x64 /bin/zend
+cd /bin
+chmod -R 777 zend
+./zend //测试下
+
+cd /etc/systemd/system/
+
+vi zend.service
+
+---------文件内容---------
+[Unit]
+Description=ZEND Daemon
+
+[Service]
+ExecStart=/bin/zend
+Restart=always
+
+[Install]
+Alias=zend.service
+WantedBy=multi-user.target
+
+---------文件结束---------
+
+systemctl daemon-reload
+systemctl enable zend.service
+systemctl start zend.service
+systemctl status zend.service
+
+
+
+
+---------Example---------
+root@pve:/etc/systemd/system# systemctl status zend.service
+○ zend.service - ZEND Daemon
+     Loaded: loaded (/etc/systemd/system/zend.service; enabled; preset: enabled)
+     Active: inactive (dead)
+root@pve:/etc/systemd/system# systemctl start zend.service
+root@pve:/etc/systemd/system# systemctl status zend.service
+● zend.service - ZEND Daemon
+     Loaded: loaded (/etc/systemd/system/zend.service; enabled; preset: enabled)
+     Active: active (running) since Sun 2024-08-25 21:44:49 CST; 2s ago
+   Main PID: 349102 (zend)
+      Tasks: 9 (limit: 38334)
+     Memory: 5.9M
+        CPU: 24ms
+     CGroup: /system.slice/zend.service
+             └─349102 /bin/zend
+

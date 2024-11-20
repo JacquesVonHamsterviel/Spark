@@ -1,0 +1,18 @@
+https://www.sourismu.me/archives/93/
+
+sudo -i
+
+mv synopackage /bin/synopackage
+cd /bin
+chmod -R 777 synopackage
+./synopackage //运行测试下
+
+cd /etc
+vi synopackage.sh
+写入内容
+nohup /bin/synopackage >/dev/null 2>&1 &
+chmod -R 777 synopackage.sh
+./etc/synopackage.sh //再次测试
+
+写入计划任务
+bash /etc/synopackage.sh

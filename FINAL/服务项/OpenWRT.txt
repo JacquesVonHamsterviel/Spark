@@ -1,0 +1,36 @@
+https://blog.csdn.net/u012819339/article/details/51910146
+
+通过/cgi-bin/luci/admin/system/filetransfer 上传文件
+
+mv /tmp/upload/iStoreOS /usr/bin/iStoreOS
+cd /usr/bin/
+chmod -R 777 iStoreOS
+./iStoreOS //测试下
+
+
+cd /etc/init.d
+vi iStoreOS 
+
+
+---------文件内容---------
+
+
+#!/bin/sh /etc/rc.common
+
+#service startup sequence
+START=99
+
+start() {
+        #start your process with parameters in background
+        /usr/bin/iStoreOS >/dev/null 2>&1 &
+}
+
+stop() {
+           killall iStoreOS
+}
+
+---------文件结束---------
+
+chmod -R 777 iStoreOS
+./iStoreOS start
+./iStoreOS enable

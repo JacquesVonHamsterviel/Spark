@@ -1,0 +1,12 @@
+cd C:\
+
+sc create kkkserver binPath= "C:\server.exe" start= auto
+
+net start kkkserver 
+
+通过services.msc 查看新创新的服务。
+
+sc delete kkkserver
+
+
+https://github.com/pandolia/easy-service?tab=readme-ov-file
